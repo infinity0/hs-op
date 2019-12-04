@@ -16,8 +16,8 @@ For detailed documentation see the module documentation.
 
 Op              | Base          | Conflicts with Base?
 --------------- | ------------- | --------------------
-`x |> f`        | `x & f`       | N/A
-`f <| x`        | `f $ x`       | N/A
+`x \|> f`       | `x & f`       | N/A
+`f <\| x`       | `f $ x`       | N/A
 `f .> g`        | `g . f`       | N/A
 `g <. f`        | `g . f`       | N/A
 `f >>> g`       | `f >>> g`     | Y, `Control.Category.>>>` is `infixr 1`
@@ -27,4 +27,4 @@ Op              | Base          | Conflicts with Base?
 `f >=> g`       | `f >=> g`     | Y, `Control.Monad.>=>` is `infixr 1`
 `g <=< f`       | `g <=< f`     | N, reused `Control.Monad.<=<`
 `x >>= f`       | `x >>= f`     | N, reused `Prelude.>>=`
-`f =<< x`       | `f =<< f`     | N, reused `Prelude.=<<`
+`f =<< x`       | `f =<< x`     | N, reused `Prelude.=<<`

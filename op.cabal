@@ -3,7 +3,7 @@ cabal-version:       2.4
 -- further documentation, see http://haskell.org/cabal/users-guide/
 
 name:                op
-version:             0.1.0.0
+version:             0.1.0.1-unreleased
 synopsis:            Common operators encouraging large-scale easy reading
 description:
  Op provides operators for writing easier-to-read Haskell. It provides new
