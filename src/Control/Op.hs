@@ -6,20 +6,22 @@ precedence, resulting in easier- and quicker-to-read code especially when used
 on long chains of expressions.
 
 All right-facing operators are defined with @infixl 1@ which is the same as
-@>>=@, so you can chain all of these together without using parentheses.
+'Control.Monad.>>=', so you can chain all of these together without using
+parentheses.
 
 All left-facing operators are defined with @infixr 1@ which is the same as
-@=<<@, so you can chain all of these together also without using parentheses.
+'Control.Monad.=<<', so you can chain all of these together also without using
+parentheses.
 
 Unlike <https://github.com/tfausak/flow Flow> and
 <https://github.com/ombocomp/FunctorMonadic FunctorMonadic> we do not restrict
 ourselves to functions and functors respectively, but we try to cover as many
 operators as possible.
 
-This means we do conflict with a few non-Prelude base operators (@>>>@, @>=>@),
-but that is the trade-off we chose. They are used less commonly than the ones
-we chose to retain compatibility with, IOO their inconsistency is part of the
-reason why they are used less commonly, and this package is trying to fix that.
+This means we conflict with some non-Prelude base operators (search "redefined"
+below), but that is the trade-off we chose. They are used less commonly than
+the ones we retain compatibility with, IOO their inconsistency is part of the
+reason why they are used less commonly, and this package tries to fix that.
 
 == Examples
 
@@ -63,7 +65,30 @@ lookupNewL m (i, k) = m |> M.lookup i >$> innerMap >>= M.lookup k >$> (i,)
 :}
 
 -}
-module Control.Op where
+module Control.Op
+  ( (|>)
+  , (<|)
+  , (.>)
+  , (<.)
+  , (>>>)
+  , (<<<)
+  , (>$>)
+  , (<$<)
+  -- Note: haddock does not support redocumenting reexported symbols, the below
+  -- hack is the best we can achieve. It results in documentation detached from
+  -- the re-exported symbol entry but is directly below it at least.
+  , (>>=)
+  -- | LTR monad application
+  --
+  -- This is 'Control.Monad.>>='.
+  , (=<<)
+  -- | RTL monad application
+  --
+  -- This is 'Control.Monad.=<<'.
+  , (>=>)
+  , (<=<)
+  )
+where
 
 import qualified Control.Category as C
 import qualified Control.Monad    as M
@@ -71,60 +96,81 @@ import qualified Data.Function    as F
 import qualified Data.Functor     as F
 
 -- | LTR function application.
+--
+-- Same as 'Data.Function.&' with a consistent fixity.
 (|>) :: a -> (a -> b) -> b
 (|>) = (F.&)
 infixl 1 |>
 {-# INLINE (|>) #-}
 
 -- | RTL function application.
+--
+-- Same as 'GHC.Base.$' with a consistent fixity.
 (<|) :: (a -> b) -> a -> b
 (<|) = ($)
 infixr 1 <|
 {-# INLINE (<|) #-}
 
 -- | LTR function composition.
+--
+-- Same as 'GHC.Base.flip' 'GHC.Base..' with a consistent fixity.
 (.>) :: (a -> b) -> (b -> c) -> (a -> c)
-(.>) = (C.>>>)
+(.>) = flip (.)
 infixl 1 .>
 {-# INLINE (.>) #-}
 
 -- | RTL function composition.
+--
+-- Same as 'GHC.Base..' with a consistent fixity.
 (<.) :: (b -> c) -> (a -> b) -> (a -> c)
 (<.) = (.)
 infixr 1 <.
 {-# INLINE (<.) #-}
 
 -- | LTR category composition.
+--
+-- This is 'Control.Category.>>>' but with a redefined consistent fixity.
 (>>>) :: C.Category f => (f a b) -> (f b c) -> (f a c)
 (>>>) = (C.>>>)
 infixl 1 >>>
 {-# INLINE (>>>) #-}
 
 -- | RTL category composition.
+--
+-- This is 'Control.Category.<<<'.
 (<<<) :: C.Category f => (f b c) -> (f a b) -> (f a c)
 (<<<) = (C.<<<)
 infixr 1 <<<
 {-# INLINE (<<<) #-}
 
 -- | LTR functor application.
+--
+-- Same as 'Data.Functor.<&>' with a consistent fixity.
 (>$>) :: Functor f => f a -> (a -> b) -> f b
 (>$>) = (F.<&>)
 infixl 1 >$>
 {-# INLINE (>$>) #-}
 
 -- | RTL functor application.
+--
+-- Same as 'Data.Functor.<$>' with a consistent fixity.
 (<$<) :: Functor f => (a -> b) -> f a -> f b
 (<$<) = (<$>)
 infixr 1 <$<
 {-# INLINE (<$<) #-}
 
--- Prelude.>>= is already infixl 1
--- Prelude.=<< is already infixr 1
-
 -- | LTR monad composition.
+--
+-- This is 'Control.Monad.>=>' but with a redefined consistent fixity.
 (>=>) :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 (>=>) = (M.>=>)
 infixl 1 >=>
 {-# INLINE (>=>) #-}
 
--- Prelude.>=> is already infixl 1
+-- | RTL monad composition.
+--
+-- This is 'Control.Monad.<=<'.
+(<=<) :: Monad m => (b -> m c) -> (a -> m b) -> (a -> m c)
+(<=<) = (M.<=<)
+infixr 1 <=<
+{-# INLINE (<=<) #-}
