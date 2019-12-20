@@ -3,7 +3,7 @@ cabal-version:       2.4
 -- further documentation, see http://haskell.org/cabal/users-guide/
 
 name:                op
-version:             0.3.0.0
+version:             0.4.0.0
 synopsis:            Common operators encouraging large-scale easy reading
 description:
  Op provides operators for writing easier-to-read Haskell. It provides new
@@ -17,7 +17,7 @@ license-file:        LICENSE
 author:              Ximin Luo
 maintainer:          infinity0@pwned.gg
 -- copyright:
-category:            Control
+category:            Combinators, Control, Functions, Utility
 extra-source-files:  CHANGELOG.md
 
 library

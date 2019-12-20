@@ -64,6 +64,31 @@ lookupNewL :: Ord k => MultiMap k v -> (Integer, k) -> Maybe (Integer, v)
 lookupNewL m (i, k) = m |> M.lookup i >$> innerMap >>= M.lookup k >$> (i,)
 :}
 
+== Applicative
+
+We omit defining an equivalent of 'Control.Applicative.<*>' because it does not
+fit into our system very well. The main use-case for 'Control.Applicative.<*>'
+translated into our system would look something like:
+
+@
+  (((f <$< a) <*< b) <*< c)
+@
+
+which is worse from a readability perspective, compared to the standard form:
+
+@
+  f \<$\> a \<*\> b \<*\> c
+@
+
+We could define extra "flipped" operators like:
+
+@
+  f >&> a >\@> b >\@> c
+@
+
+with @(>&>) = (<$<)@ and @(>\@>) = (<*<)@ with flipped fixities, but didn't see
+a major demand to do this ATTOW. If you want this, please file a PR.
+
 -}
 module Control.Op
   ( (|>)
@@ -74,30 +99,54 @@ module Control.Op
   , (<<<)
   , (>$>)
   , (<$<)
+  , (>$=)
+  , (=$<)
+  , (>*=)
+  , (=*<)
+  , (>$>-)
+  , (-<$<)
+  , (>$>=)
+  , (=<$<)
   -- Note: haddock does not support redocumenting reexported symbols, the below
   -- hack is the best we can achieve. It results in documentation detached from
   -- the re-exported symbol entry but is directly below it at least.
+  , (>>)
+  -- | LTR applicative replacement, constrained to a monad.
+  --
+  -- This is 'Control.Monad.>>'.
+  , (<<)
   , (>>=)
-  -- | LTR monad application
+  -- | LTR monad application.
   --
   -- This is 'Control.Monad.>>='.
   , (=<<)
-  -- | RTL monad application
+  -- | RTL monad application.
   --
   -- This is 'Control.Monad.=<<'.
   , (>=>)
   , (<=<)
+  , (^>>)
+  , (<<^)
+  , (>>^)
+  , (^<<)
   )
 where
 
-import qualified Control.Category as C
-import qualified Control.Monad    as M
-import qualified Data.Function    as F
-import qualified Data.Functor     as F
+import qualified Control.Applicative as A
+import           Control.Arrow       (Arrow (..))
+import qualified Control.Arrow       as Ar
+import qualified Control.Category    as C
+import qualified Control.Monad       as M
+import qualified Data.Foldable       as T
+import qualified Data.Function       as F
+import qualified Data.Functor        as F
+import qualified Data.Traversable    as T
 
 -- | LTR function application.
 --
 -- Same as 'Data.Function.&' with a consistent fixity.
+--
+-- Also same as the ocaml function <https://caml.inria.fr/pub/docs/manual-ocaml/libref/Pervasives.html#VAL(|%3E) (|\>)>
 (|>) :: a -> (a -> b) -> b
 (|>) = (F.&)
 infixl 1 |>
@@ -130,7 +179,7 @@ infixr 1 <.
 -- | LTR category composition.
 --
 -- This is 'Control.Category.>>>' but with a redefined consistent fixity.
-(>>>) :: C.Category f => (f a b) -> (f b c) -> (f a c)
+(>>>) :: C.Category f => f a b -> f b c -> f a c
 (>>>) = (C.>>>)
 infixl 1 >>>
 {-# INLINE (>>>) #-}
@@ -138,7 +187,7 @@ infixl 1 >>>
 -- | RTL category composition.
 --
 -- This is 'Control.Category.<<<'.
-(<<<) :: C.Category f => (f b c) -> (f a b) -> (f a c)
+(<<<) :: C.Category f => f b c -> f a b -> f a c
 (<<<) = (C.<<<)
 infixr 1 <<<
 {-# INLINE (<<<) #-}
@@ -159,6 +208,78 @@ infixl 1 >$>
 infixr 1 <$<
 {-# INLINE (<$<) #-}
 
+-- | LTR functor replacement.
+--
+-- Same as 'Data.Functor.$>' with a consistent fixity.
+(>$=) :: Functor f => f a -> b -> f b
+(>$=) = (F.$>)
+infixl 1 >$=
+{-# INLINE (>$=) #-}
+
+-- | RTL functor replacement.
+--
+-- Same as 'Data.Functor.<$' with a consistent fixity.
+(=$<) :: Functor f => b -> f a -> f b
+(=$<) = (<$)
+infixr 1 =$<
+{-# INLINE (=$<) #-}
+
+-- | LTR applicative replacement.
+--
+-- Same as 'Control.Applicative.*>' with a consistent fixity.
+(>*=) :: Applicative f => f a -> f b -> f b
+(>*=) = (A.*>)
+infixl 1 >*=
+{-# INLINE (>*=) #-}
+
+-- | RTL applicative replacement.
+--
+-- Same as 'Control.Applicative.<*' with a consistent fixity.
+(=*<) :: Applicative f => f b -> f a -> f b
+(=*<) = (A.<*)
+infixr 1 =*<
+{-# INLINE (=*<) #-}
+
+-- | LTR applicative fold.
+--
+-- Same as 'Data.Foldable.for_' as an operator with a consistent fixity.
+(>$>-) :: (Foldable t, Applicative f) => t a -> (a -> f b) -> f ()
+(>$>-) = T.for_
+infixl 1 >$>-
+{-# INLINE (>$>-) #-}
+
+-- | RTL applicative fold.
+--
+-- Same as 'Data.Foldable.traverse_' as an operator with a consistent fixity.
+(-<$<) :: (Foldable t, Applicative f) => (a -> f b) -> t a -> f ()
+(-<$<) = T.traverse_
+infixr 1 -<$<
+{-# INLINE (-<$<) #-}
+
+-- | LTR applicative traversal.
+--
+-- Same as 'Data.Traversable.for' as an operator with a consistent fixity.
+(>$>=) :: (Traversable t, Applicative f) => t a -> (a -> f b) -> f (t b)
+(>$>=) = T.for
+infixl 1 >$>=
+{-# INLINE (>$>=) #-}
+
+-- | RTL applicative traversal.
+--
+-- Same as 'Data.Traversable.traverse' as an operator with a consistent fixity.
+(=<$<) :: (Traversable t, Applicative f) => (a -> f b) -> t a -> f (t b)
+(=<$<) = T.traverse
+infixr 1 =<$<
+{-# INLINE (=<$<) #-}
+
+-- | RTL applicative replacement, constrained to a monad.
+--
+-- Surprisingly, this is not defined in the base libraries.
+(<<) :: Monad m => m a -> m b -> m a
+(<<) = (=*<)
+infixr 1 <<
+{-# INLINE (<<) #-}
+
 -- | LTR monad composition.
 --
 -- This is 'Control.Monad.>=>' but with a redefined consistent fixity.
@@ -174,3 +295,35 @@ infixl 1 >=>
 (<=<) = (M.<=<)
 infixr 1 <=<
 {-# INLINE (<=<) #-}
+
+-- | LTR function-arrow composition.
+--
+-- This is 'Control.Arrow.^>>' but with a redefined consistent fixity.
+(^>>) :: Arrow r => (a -> b) -> r b c -> r a c
+(^>>) = (Ar.^>>)
+infixl 1 ^>>
+{-# INLINE (^>>) #-}
+
+-- | RTL function-arrow composition.
+--
+-- This is 'Control.Arrow.<<^'.
+(<<^) :: Arrow r => r b c -> (a -> b) -> r a c
+(<<^) = (Ar.<<^)
+infixr 1 <<^
+{-# INLINE (<<^) #-}
+
+-- | LTR arrow-function composition.
+--
+-- This is 'Control.Arrow.>>^' but with a redefined consistent fixity.
+(>>^) :: Arrow r => r a b -> (b -> c) -> r a c
+(>>^) = (Ar.>>^)
+infixl 1 >>^
+{-# INLINE (>>^) #-}
+
+-- | RTL arrow-function composition.
+--
+-- This is 'Control.Arrow.^<<'.
+(^<<) :: Arrow r => (b -> c) -> r a b -> r a c
+(^<<) = (Ar.^<<)
+infixr 1 ^<<
+{-# INLINE (^<<) #-}
