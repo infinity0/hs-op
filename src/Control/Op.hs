@@ -151,13 +151,22 @@ import qualified Data.Function       as F
 import qualified Data.Functor        as F
 import qualified Data.Traversable    as T
 
+-- compatibility imports
+import           Control.Applicative (Applicative)
+import           Data.Foldable       (Foldable)
+import           Data.Traversable    (Traversable)
+
 -- | LTR function application.
 --
 -- Same as 'Data.Function.&' with a consistent fixity.
 --
 -- Also same as the ocaml function <https://caml.inria.fr/pub/docs/manual-ocaml/libref/Pervasives.html#VAL(|%3E) (|\>)>
 (|>) :: a -> (a -> b) -> b
+#if MIN_VERSION_base(4,8,0)
 (|>) = (F.&)
+#else
+a |> f = f a
+#endif
 infixl 1 |>
 {-# INLINE (|>) #-}
 
@@ -208,7 +217,7 @@ infixr 1 <<<
 #if MIN_VERSION_base(4,11,0)
 (>$>) = (F.<&>)
 #else
-as >$> f = f <$> as
+as >$> f = f F.<$> as
 #endif
 infixl 1 >$>
 {-# INLINE (>$>) #-}
@@ -217,7 +226,7 @@ infixl 1 >$>
 --
 -- Same as 'Data.Functor.<$>' with a consistent fixity.
 (<$<) :: Functor f => (a -> b) -> f a -> f b
-(<$<) = (<$>)
+(<$<) = (F.<$>)
 infixr 1 <$<
 {-# INLINE (<$<) #-}
 
@@ -228,7 +237,7 @@ infixr 1 <$<
 #if MIN_VERSION_base(4,7,0)
 (>$=) = (F.$>)
 #else
-(>$=) = flip (<$)
+(>$=) = flip (F.<$)
 #endif
 infixl 1 >$=
 {-# INLINE (>$=) #-}
@@ -237,7 +246,7 @@ infixl 1 >$=
 --
 -- Same as 'Data.Functor.<$' with a consistent fixity.
 (=$<) :: Functor f => b -> f a -> f b
-(=$<) = (<$)
+(=$<) = (F.<$)
 infixr 1 =$<
 {-# INLINE (=$<) #-}
 
@@ -293,7 +302,11 @@ infixr 1 =<$<
 --
 -- Surprisingly, this is not defined in the base libraries.
 (<<) :: Monad m => m a -> m b -> m a
+#if MIN_VERSION_base(4,8,0)
 (<<) = (=*<)
+#else
+n << m = m >> n
+#endif
 infixr 1 <<
 {-# INLINE (<<) #-}
 

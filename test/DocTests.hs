@@ -7,5 +7,5 @@ main :: IO ()
 -- so doctest doesn't work since it runs outside of cabal
 main = doctest ["-i", "src"]
 #else
-main = pure ()
+main = return ()
 #endif
