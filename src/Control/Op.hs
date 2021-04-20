@@ -47,6 +47,12 @@ lookupOldR m (i, k) = (i,) <$> (M.lookup k . innerMap =<< M.lookup i m)
 
 or, slightly better but the @. innerMap@ still breaks up the LTR flow:
 
+#if !MIN_VERSION_base(4,11,0)
+>>> :{
+(<&>) = flip (<$>)
+infixl 1 <&>
+:}
+#endif
 >>> :{
 lookupOldL :: Ord k => MultiMap k v -> (Integer, k) -> Maybe (Integer, v)
 lookupOldL m (i, k) = M.lookup i m >>= M.lookup k . innerMap <&> (i,)
@@ -90,6 +96,9 @@ with @(>&>) = (<$<)@ and @(>\@>) = (<*<)@ with flipped fixities, but didn't see
 a major demand to do this ATTOW. If you want this, please file a PR.
 
 -}
+
+{-# LANGUAGE CPP #-}
+
 module Control.Op
   ( (|>)
   , (<|)
@@ -196,7 +205,11 @@ infixr 1 <<<
 --
 -- Same as 'Data.Functor.<&>' with a consistent fixity.
 (>$>) :: Functor f => f a -> (a -> b) -> f b
+#if MIN_VERSION_base(4,11,0)
 (>$>) = (F.<&>)
+#else
+as >$> f = f <$> as
+#endif
 infixl 1 >$>
 {-# INLINE (>$>) #-}
 
@@ -212,7 +225,11 @@ infixr 1 <$<
 --
 -- Same as 'Data.Functor.$>' with a consistent fixity.
 (>$=) :: Functor f => f a -> b -> f b
+#if MIN_VERSION_base(4,7,0)
 (>$=) = (F.$>)
+#else
+(>$=) = flip (<$)
+#endif
 infixl 1 >$=
 {-# INLINE (>$=) #-}
 
